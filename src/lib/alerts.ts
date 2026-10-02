@@ -1,5 +1,5 @@
 import { Subscriber, saveSub, allSubs, sign, logEvent } from "./models";
-import { Notice, openNotices, getNotice } from "./boamp";
+import { Notice, openNotices } from "./boamp";
 import { analyze, ACCESS_LABEL, Analysis } from "./analysis";
 import { tradeById, matches, DEPTS, deptName } from "./trades";
 import { PLANS, SITE_URL, BRAND } from "./config";

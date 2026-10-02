@@ -69,7 +69,7 @@ export async function noticeText(id: string): Promise<string> {
 // ---------- storage ----------
 const OPEN_CAP = 600;
 export async function openNotices(dept: string): Promise<Notice[]> { return ((await db.get<Notice[]>(`open:${dept}`)) || []).filter((n) => isOpenCall(n)); }
-export async function getNotice(id: string) { return db.get<Notice>(`notice:${id}`); }
+
 
 export async function ingest(log: (s: string) => void = () => {}, only?: { dept: string }) {
   const since = new Date(Date.now() - 864e5).toISOString().slice(0, 10); // run 3-4×/day; yesterday + today
@@ -87,7 +87,6 @@ export async function ingest(log: (s: string) => void = () => {}, only?: { dept:
     added += fresh.length;
     const next = [...fresh, ...cur].filter((n) => isOpenCall(n)).slice(0, OPEN_CAP);
     await db.set(`open:${d}`, next, 60 * 60 * 24 * 90);
-    for (const n of fresh) if (!(await db.get(`notice:${n.id}`))) await db.set(`notice:${n.id}`, n, 60 * 60 * 24 * 120);
   }
   if (!only) await db.set("ingest:last", { at: new Date().toISOString(), fetched: all.length, added }, 60 * 60 * 24 * 30);
   log(`BOAMP : ${all.length} avis ouverts récupérés depuis le ${since}, ${added} nouveaux`);

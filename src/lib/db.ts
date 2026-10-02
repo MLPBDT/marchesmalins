@@ -16,16 +16,19 @@ interface Store {
   incr(k: string, ttlSec?: number): Promise<number>;
 }
 
+// Key prefix lets several sites share one Upstash database (Marchés Malins shares FichePilote's).
+const P = process.env.DB_PREFIX ?? "mm:";
+const k_ = (k: string) => P + k;
 class RedisStore implements Store {
   r = new Redis({ url: (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL)!, token: (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN)! });
-  async get<T>(k: string) { return ((await this.r.get(k)) as T) ?? null; }
-  async set(k: string, v: Json, ttl?: number) { ttl ? await this.r.set(k, v, { ex: ttl }) : await this.r.set(k, v); }
-  async del(k: string) { await this.r.del(k); }
-  async sadd(k: string, ...m: string[]) { if (m.length) await (this.r as any).sadd(k, ...m); }
-  async srem(k: string, m: string) { await this.r.srem(k, m); }
-  async smembers(k: string) { return ((await this.r.smembers(k)) as string[]) || []; }
-  async sismember(k: string, m: string) { return (await this.r.sismember(k, m)) === 1; }
-  async incr(k: string, ttl?: number) { const n = await this.r.incr(k); if (ttl && n === 1) await this.r.expire(k, ttl); return n; }
+  async get<T>(k: string) { return ((await this.r.get(k_(k))) as T) ?? null; }
+  async set(k: string, v: Json, ttl?: number) { ttl ? await this.r.set(k_(k), v, { ex: ttl }) : await this.r.set(k_(k), v); }
+  async del(k: string) { await this.r.del(k_(k)); }
+  async sadd(k: string, ...m: string[]) { if (m.length) await (this.r as any).sadd(k_(k), ...m); }
+  async srem(k: string, m: string) { await this.r.srem(k_(k), m); }
+  async smembers(k: string) { return ((await this.r.smembers(k_(k))) as string[]) || []; }
+  async sismember(k: string, m: string) { return (await this.r.sismember(k_(k), m)) === 1; }
+  async incr(k: string, ttl?: number) { const n = await this.r.incr(k_(k)); if (ttl && n === 1) await this.r.expire(k_(k), ttl); return n; }
 }
 
 class FileStore implements Store {
