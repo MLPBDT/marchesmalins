@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     try { return NextResponse.redirect(await createCheckout({ email, company: company || email, plan, choice, source }), 303); }
     catch (e: any) { console.error(e); return back("Le paiement est momentanément indisponible. Commencez avec la formule gratuite, vous pourrez passer à Solo ensuite."); }
   }
-  await signupFree(email, company || email, choice, source);
+  try { await signupFree(email, company || email, choice, source); }
+  catch (e: any) { console.error(e); return back(`L'email de confirmation n'a pas pu partir (${String(e.message).slice(0, 120)}). Réessayez dans quelques minutes.`); }
   return NextResponse.redirect(`${SITE_URL}/merci`, 303);
 }
