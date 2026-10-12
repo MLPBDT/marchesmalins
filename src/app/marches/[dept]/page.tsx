@@ -7,7 +7,8 @@ import { NoticeList } from "@/components/NoticeList";
 export const revalidate = 3600;
 export async function generateMetadata({ params }: { params: Promise<{ dept: string }> }) {
   const { dept } = await params;
-  return { title: `Marchés publics ${inDept(dept)} (${dept}) : appels d'offres en cours`, description: `Les appels d'offres publics ouverts ${inDept(dept)}, par métier, mis à jour chaque jour. Alerte gratuite par email.` };
+  const count = (await openNotices(dept).catch(() => [])).length;
+  return { robots: count ? undefined : { index: false, follow: true }, title: `Marchés publics ${inDept(dept)} (${dept}) : appels d'offres en cours`, description: `Les appels d'offres publics ouverts ${inDept(dept)}, par métier, mis à jour chaque jour. Alerte gratuite par email.` };
 }
 export default async function Dept({ params }: { params: Promise<{ dept: string }> }) {
   const { dept } = await params;
