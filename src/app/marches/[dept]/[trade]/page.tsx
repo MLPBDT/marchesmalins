@@ -13,7 +13,9 @@ export async function generateMetadata({ params }: { params: Promise<{ dept: str
   const { dept, trade } = await params;
   const t = tradeById(trade);
   if (!t || !DEPTS[dept]) return {};
-  return { title: `Marchés publics ${t.plural} ${inDept(dept)} (${dept})`, description: `Appels d'offres publics de ${t.plural} ouverts ${inDept(dept)}, mis à jour chaque jour. Recevez-les gratuitement par email.`, alternates: { canonical: `/marches/${dept}/${trade}` } };
+  // page sans marché ouvert = page vide : on la garde pour les visiteurs mais hors de Google (méthode SEO : pas de pages pauvres)
+  const count = (await matchingNotices({ trades: [trade], depts: [dept], keywords: [] }).catch(() => [])).length;
+  return { robots: count ? undefined : { index: false, follow: true }, title: `Marchés publics ${t.plural} ${inDept(dept)} (${dept})`, description: `Appels d'offres publics de ${t.plural} ouverts ${inDept(dept)}, mis à jour chaque jour. Recevez-les gratuitement par email.`, alternates: { canonical: `/marches/${dept}/${trade}` } };
 }
 export default async function Page({ params, searchParams }: { params: Promise<{ dept: string; trade: string }>; searchParams: Promise<{ r?: string }> }) {
   const { dept, trade } = await params;
