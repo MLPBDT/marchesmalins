@@ -7,6 +7,7 @@ import { NoticeList } from "@/components/NoticeList";
 import { SignupForm } from "@/components/SignupForm";
 import { getProspect, saveProspect } from "@/lib/prospects";
 import { logEvent } from "@/lib/models";
+import { isLive } from "@/lib/decp";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ dept: string; trade: string }> }) {
@@ -35,6 +36,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
         <div className="font-bold">Recevez-les automatiquement</div>
         <p className="mt-1 text-sm text-slate-600">Chaque lundi, les nouveaux marchés de {t.plural} {inDept(dept)}. Gratuit, désinscription en un clic.</p>
         <div className="mt-4"><SignupForm compact plan="gratuit" trade={trade} dept={dept} email={prospect?.email} source={prospect?.slug} /></div>
+        {isLive(dept, trade) && <p className="mt-4 text-sm"><Link href={`/marches-attribues/${dept}/${trade}`} className="font-semibold text-brand-700">Qui gagne ces marchés, et à quel prix ? →</Link></p>}
         <p className="mt-4 text-xs text-slate-500">Envie de les recevoir chaque matin, résumés en 3 lignes avec le montant et un verdict « accessible à une petite entreprise ? » ? <Link href={`/commencer?plan=solo&metier=${trade}&dept=${dept}`} className="font-semibold text-brand-700">Formule Solo, 19 €/mois</Link></p>
       </aside>
     </div>
