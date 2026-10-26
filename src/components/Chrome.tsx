@@ -38,6 +38,8 @@ export function Footer() {
           <Link href="/marches" className="block hover:text-ink">Marchés ouverts par département</Link>
           <Link href="/#comment" className="block hover:text-ink">Comment ça marche</Link>
           <Link href="/#tarifs" className="block hover:text-ink">Tarifs</Link>
+          <Link href="/veille-marches-publics-gratuite" className="block hover:text-ink">Veille marchés publics gratuite</Link>
+          <Link href="/alternative-vecteur-plus" className="block hover:text-ink">Alternative à Vecteur Plus</Link>
         </div>
         <div className="space-y-2">
           <div className="font-semibold text-ink">Légal</div>
