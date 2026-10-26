@@ -9,7 +9,7 @@ export const revalidate = 21600; // 6 h
 
 // Seules les pages qui ont au moins un marché ouvert vont dans le sitemap (les autres sont en noindex).
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = ["", "/marches", "/commencer", "/cgv", "/mentions-legales", "/confidentialite"];
+  const base = ["", "/marches", "/commencer", "/cgv", "/mentions-legales", "/confidentialite", "/veille-marches-publics-gratuite", "/alternative-vecteur-plus"];
   const pages: string[] = [];
   for (const d of Object.keys(DEPTS)) {
     const list = await openNotices(d).catch(() => []);
