@@ -66,6 +66,7 @@ export async function runOutreach(opts: { dryRun?: boolean; log?: (s: string) =>
     (p.status === "sent1" && p.lastSentAt && Date.now() - +new Date(p.lastSentAt) > GAP.sent1) ||
     (p.status === "sent2" && p.lastSentAt && Date.now() - +new Date(p.lastSentAt) > GAP.sent2)
   ).sort((a, b) => Number(b.status !== "ready") - Number(a.status !== "ready") || b.score - a.score);
+  log(`${due.length} prospect(s) à traiter — chargés en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   let sent = 0;
   for (const p of due) {
     if (sent >= maxPerRun) break;
@@ -76,8 +77,10 @@ export async function runOutreach(opts: { dryRun?: boolean; log?: (s: string) =>
     const key = `outreach-count:${today}:${box?.user || "dry"}`;
     if (((await db.get<number>(key)) || 0) >= limit) continue;
     const step = (p.status === "ready" ? 1 : p.status === "sent1" ? 2 : 3) as 1 | 2 | 3;
+    const tc = Date.now();
     const m = await composeEmail(p, step, memo);
-    if (step === 1 && m.n < 2) { (p as any).retryAt = Date.now() + 2 * DAY; await saveProspect(p); log(`· ${p.name} : plus assez de marchés ouverts, reporté de 2 jours`); continue; }
+    if (opts.dryRun) log(`  ${p.name} (${p.dept}, étape ${step}) : ${m.n} marché(s), ${((Date.now() - tc) / 1000).toFixed(1)} s`);
+    if (step === 1 && m.n < 2) { if (!opts.dryRun) { (p as any).retryAt = Date.now() + 2 * DAY; await saveProspect(p); } log(`· ${p.name} : plus assez de marchés ouverts, reporté de 2 jours`); continue; }
     if (opts.dryRun) { log(`[dry] ${p.email} — ${m.subject}`); sent++; continue; }
     const tr = nodemailer.createTransport({ host: process.env.OUTREACH_SMTP_HOST, port: Number(process.env.OUTREACH_SMTP_PORT || 587), secure: Number(process.env.OUTREACH_SMTP_PORT) === 465, auth: { user: box!.user, pass: box!.pass } });
     try {
