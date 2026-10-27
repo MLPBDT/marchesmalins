@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/Chrome";
 import { SignupForm } from "@/components/SignupForm";
-import { DEPTS, tradeById, deptName, inDept } from "@/lib/trades";
+import { DEPTS, tradeById, deptName, inDept, deT } from "@/lib/trades";
 import { awards, stats, isLive, MIN_AWARDS_TO_INDEX } from "@/lib/decp";
 
 export const revalidate = 86400; // données recalculées une fois par jour
@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: { params: Promise<{ dept: str
   const index = isLive(dept, trade) && s.contracts >= MIN_AWARDS_TO_INDEX;
   return {
     robots: index ? undefined : { index: false, follow: true },
-    title: `Marchés publics de ${t.plural} attribués ${inDept(dept)} : qui gagne, à quel prix`,
-    description: `${s.contracts} marchés de ${t.plural} attribués ${inDept(dept)} en 12 mois : entreprises gagnantes, montants, nombre d'offres reçues. Données officielles DECP.`,
+    title: `Marchés publics ${deT(t)} attribués ${inDept(dept)} : qui gagne, à quel prix`,
+    description: `${s.contracts} marchés ${deT(t)} attribués ${inDept(dept)} en 12 mois : entreprises gagnantes, montants, nombre d'offres reçues. Données officielles DECP.`,
     alternates: { canonical: `/marches-attribues/${dept}/${trade}` },
   };
 }
@@ -35,15 +35,15 @@ export default async function Page({ params }: { params: Promise<{ dept: string;
 
   // Lecture des chiffres : l'élément original de la page (calculé, pas rédigé à la main)
   const insights: string[] = [];
-  if (s.avgOffers != null) insights.push(`En moyenne, un marché de ${t.plural} ${where} reçoit ${s.avgOffers.toFixed(1).replace(".", ",")} offre${s.avgOffers >= 2 ? "s" : ""}${s.avgOffers < 3 ? " : la concurrence est faible, une offre sérieuse a de vraies chances" : s.avgOffers < 5 ? " : une concurrence modérée" : " : la concurrence est forte, soignez le mémoire technique"}.`);
+  if (s.avgOffers != null) insights.push(`En moyenne, un marché ${deT(t)} ${where} reçoit ${s.avgOffers.toFixed(1).replace(".", ",")} offre${s.avgOffers >= 2 ? "s" : ""}${s.avgOffers < 3 ? " : la concurrence est faible, une offre sérieuse a de vraies chances" : s.avgOffers < 5 ? " : une concurrence modérée" : " : la concurrence est forte, soignez le mémoire technique"}.`);
   if (s.oneBidShare != null && s.oneBidShare >= 0.15) insights.push(`${pct(s.oneBidShare)} des marchés n'ont reçu qu'une seule offre. Autrement dit, l'acheteur n'avait pas le choix : être présent suffit souvent.`);
   if (s.smallShare != null) insights.push(`${pct(s.smallShare)} des marchés font moins de 90 000 € HT : des montants à la portée d'une petite entreprise ou d'un artisan seul.`);
   if (s.distinctWinners && s.contracts) insights.push(`${s.distinctWinners} entreprises différentes ont gagné au moins un marché : ${s.distinctWinners / s.contracts > 0.6 ? "le marché est ouvert, pas réservé à quelques habitués" : "quelques entreprises reviennent souvent, mais les acheteurs changent régulièrement de titulaire"}.`);
 
   return (<><Header /><main className="container-x py-12">
     <div className="text-sm text-slate-500"><Link href="/marches">Départements</Link> › <Link href={`/marches/${dept}`}>{deptName(dept)}</Link> › <Link href={`/marches/${dept}/${trade}`}>{t.name}</Link> › Marchés attribués</div>
-    <h1 className="mt-2 text-3xl font-extrabold">Marchés publics de {t.plural} attribués {where} : qui gagne, à quel prix</h1>
-    <p className="mt-3 max-w-3xl text-slate-600">Sur les 12 derniers mois, <strong>{s.contracts} marché{s.contracts > 1 ? "s" : ""} de {t.plural}</strong> {s.contracts > 1 ? "ont été attribués" : "a été attribué"} par les acheteurs publics {where} ({deptName(dept)}, {dept}). Voici qui les a gagnés, pour quels montants et face à combien de concurrents. Source : données essentielles de la commande publique (DECP), publiées par l&apos;État.</p>
+    <h1 className="mt-2 text-3xl font-extrabold">Marchés publics {deT(t)} attribués {where} : qui gagne, à quel prix</h1>
+    <p className="mt-3 max-w-3xl text-slate-600">Sur les 12 derniers mois, <strong>{s.contracts} marché{s.contracts > 1 ? "s" : ""} {deT(t)}</strong> {s.contracts > 1 ? "ont été attribués" : "a été attribué"} par les acheteurs publics {where} ({deptName(dept)}, {dept}). Voici qui les a gagnés, pour quels montants et face à combien de concurrents. Source : données essentielles de la commande publique (DECP), publiées par l&apos;État.</p>
 
     {s.contracts === 0 ? <p className="mt-8 text-slate-600">Pas encore de marché attribué publié pour ce métier dans ce département sur 12 mois.</p> : <>
       <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -77,7 +77,7 @@ export default async function Page({ params }: { params: Promise<{ dept: string;
 
         <aside className="card h-fit p-5 lg:sticky lg:top-20">
           <div className="font-bold">Le prochain, c&apos;est pour vous ?</div>
-          <p className="mt-1 text-sm text-slate-600">Recevez les nouveaux appels d&apos;offres de {t.plural} {where} avant la date limite. Gratuit, désinscription en un clic.</p>
+          <p className="mt-1 text-sm text-slate-600">Recevez les nouveaux appels d&apos;offres {deT(t)} {where} avant la date limite. Gratuit, désinscription en un clic.</p>
           <div className="mt-4"><SignupForm compact plan="gratuit" trade={trade} dept={dept} /></div>
           <p className="mt-4 text-sm"><Link href={`/marches/${dept}/${trade}`} className="font-semibold text-brand-700">Voir les marchés ouverts en ce moment →</Link></p>
         </aside>
