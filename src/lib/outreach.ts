@@ -67,20 +67,27 @@ export async function runOutreach(opts: { dryRun?: boolean; log?: (s: string) =>
     (p.status === "sent2" && p.lastSentAt && Date.now() - +new Date(p.lastSentAt) > GAP.sent2)
   ).sort((a, b) => Number(b.status !== "ready") - Number(a.status !== "ready") || b.score - a.score);
   log(`${due.length} prospect(s) à traiter — chargés en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  // quota du jour lu une seule fois par boîte (avant : 1 lecture par prospect, même quand le quota était atteint)
+  const quotaKey = (u: string) => `outreach-count:${today}:${u}`;
+  const used = new Map<string, number>();
+  for (const b of bx) used.set(b.user, (await db.get<number>(quotaKey(b.user))) || 0);
+  log(`Quota du jour : ${bx.map((b) => `${b.user} ${used.get(b.user)}/${limit}`).join(", ") || "aucune boîte"}`);
+  if (!opts.dryRun && bx.length && bx.every((b) => (used.get(b.user) || 0) >= limit)) { log("Quota du jour atteint sur toutes les boîtes."); return { sent: 0 }; }
+  const skipped = { suppressed: 0, quota: 0, fewNotices: 0 };
   let sent = 0;
   for (const p of due) {
     if (sent >= maxPerRun) break;
     if (Date.now() - t0 > 40000) { log("Budget temps atteint, suite au prochain passage."); break; }
-    if (await isSuppressed(p.email)) { p.status = "unsubscribed"; await saveProspect(p); continue; }
+    if (await isSuppressed(p.email)) { skipped.suppressed++; if (!opts.dryRun) { p.status = "unsubscribed"; await saveProspect(p); } continue; }
     const box = p.box ? bx.find((b) => b.user === p.box) : bx[sent % Math.max(1, bx.length)];
     if (!box && !opts.dryRun) { log("Aucune boîte d'envoi configurée."); break; }
-    const key = `outreach-count:${today}:${box?.user || "dry"}`;
-    if (((await db.get<number>(key)) || 0) >= limit) continue;
+    const key = quotaKey(box?.user || "dry");
+    if (box && (used.get(box.user) || 0) >= limit) { skipped.quota++; continue; }
     const step = (p.status === "ready" ? 1 : p.status === "sent1" ? 2 : 3) as 1 | 2 | 3;
     const tc = Date.now();
     const m = await composeEmail(p, step, memo);
     if (opts.dryRun) log(`  ${p.name} (${p.dept}, étape ${step}) : ${m.n} marché(s), ${((Date.now() - tc) / 1000).toFixed(1)} s`);
-    if (step === 1 && m.n < 2) { if (!opts.dryRun) { (p as any).retryAt = Date.now() + 2 * DAY; await saveProspect(p); } log(`· ${p.name} : plus assez de marchés ouverts, reporté de 2 jours`); continue; }
+    if (step === 1 && m.n < 2) { skipped.fewNotices++; if (!opts.dryRun) { (p as any).retryAt = Date.now() + 2 * DAY; await saveProspect(p); } log(`· ${p.name} : plus assez de marchés ouverts, reporté de 2 jours`); continue; }
     if (opts.dryRun) { log(`[dry] ${p.email} — ${m.subject}`); sent++; continue; }
     const tr = nodemailer.createTransport({ host: process.env.OUTREACH_SMTP_HOST, port: Number(process.env.OUTREACH_SMTP_PORT || 587), secure: Number(process.env.OUTREACH_SMTP_PORT) === 465, auth: { user: box!.user, pass: box!.pass } });
     try {
@@ -89,7 +96,7 @@ export async function runOutreach(opts: { dryRun?: boolean; log?: (s: string) =>
         headers: { "List-Unsubscribe": `<${unsubUrl(p).replace("/desinscription/", "/api/unsubscribe/")}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
       });
       p.status = step === 1 ? "sent1" : step === 2 ? "sent2" : "sent3"; p.lastSentAt = new Date().toISOString(); p.box = box!.user;
-      await saveProspect(p); await db.incr(key, 60 * 60 * 36); sent++;
+      await saveProspect(p); await db.incr(key, 60 * 60 * 36); used.set(box!.user, (used.get(box!.user) || 0) + 1); sent++;
       log(`→ ${p.email} (étape ${step})`);
     } catch (e: any) {
       const rcpt = e.command === "RCPT TO" || /user unknown|does not exist|no such user|mailbox unavailable|recipient address rejected/i.test(e.message);
@@ -99,6 +106,7 @@ export async function runOutreach(opts: { dryRun?: boolean; log?: (s: string) =>
       break;
     }
   }
+  log(`Fin : ${sent} envoi(s) ; ignorés — désinscrits ${skipped.suppressed}, quota ${skipped.quota}, pas assez de marchés ${skipped.fewNotices}`);
   return { sent };
 }
 
