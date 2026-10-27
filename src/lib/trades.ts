@@ -50,3 +50,6 @@ export function inDept(d: string) {
   if (/^(Corse|Charente|Gironde|Haute|Loire|Marne|Manche|Mayenne|Meuse|Moselle|Nièvre|Dordogne|Drôme|Creuse|Corrèze|Sarthe|Savoie|Somme|Vendée|Vienne|Seine|Saône|Haute-|Lozère|Sarthe|Somme|Martinique|Guadeloupe|Guyane|Réunion)/.test(n)) return `en ${n}`;
   return `dans le ${n}`;
 }
+
+// « de électricité » → « d'électricité »
+export const deT = (t: { plural: string }) => (/^[aeiouyéèêâîôû]/i.test(t.plural) ? `d'${t.plural}` : `de ${t.plural}`);
