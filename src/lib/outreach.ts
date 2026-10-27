@@ -19,9 +19,9 @@ const listUrl = (p: Prospect, step: number) => `${SITE_URL}/marches/${p.dept}/${
 const unsubUrl = (p: Prospect) => `${SITE_URL}/desinscription/${sign({ e: p.email, p: p.slug }, 60 * 60 * 24 * 365)}`;
 const fmt = (s: string | null) => (s ? new Date(s).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" }) : "");
 
-export async function composeEmail(p: Prospect, step: 1 | 2 | 3) {
+export async function composeEmail(p: Prospect, step: 1 | 2 | 3, memo?: Map<string, any>) {
   const t = tradeById(p.trade)!;
-  const all = await matchingNotices({ trades: [p.trade], depts: [p.dept], keywords: [] });
+  const all = await matchingNotices({ trades: [p.trade], depts: [p.dept], keywords: [] }, memo);
   const n = all.length;
   const newer = p.lastSentAt ? all.filter((x) => x.addedAt > p.lastSentAt!).length : n;
   const ex = all.filter((x) => (daysLeft(x.deadline) ?? 30) >= 7).slice(0, 2);
@@ -57,7 +57,11 @@ export async function runOutreach(opts: { dryRun?: boolean; log?: (s: string) =>
   const dow = new Date().toLocaleString("en-GB", { timeZone: "Europe/Paris", weekday: "short" });
   if (!opts.dryRun && (hour < 8 || hour > 18 || dow === "Sat" || dow === "Sun")) { log("Hors plage d'envoi (lun-ven 8h-18h)."); return { sent: 0 }; }
   if (!opts.dryRun && process.env.OUTREACH_ENABLED !== "1") { log("Prospection désactivée (OUTREACH_ENABLED≠1)."); return { sent: 0 }; }
-  const due = (await allProspects()).filter((p) =>
+  // 27/10 : la boucle passait sur ~300 prospects (1 lecture BOAMP chacun) → délai Vercel dépassé (504), aucun envoi depuis le 22/10.
+  // Correctifs : avis BOAMP mis en cache par département, budget temps, et prospects « pas assez de marchés » reportés de 2 jours.
+  const t0 = Date.now();
+  const memo = new Map<string, any>();
+  const due = (await allProspects()).filter((p) => !((p as any).retryAt > Date.now())).filter((p) =>
     p.status === "ready" ||
     (p.status === "sent1" && p.lastSentAt && Date.now() - +new Date(p.lastSentAt) > GAP.sent1) ||
     (p.status === "sent2" && p.lastSentAt && Date.now() - +new Date(p.lastSentAt) > GAP.sent2)
@@ -65,14 +69,15 @@ export async function runOutreach(opts: { dryRun?: boolean; log?: (s: string) =>
   let sent = 0;
   for (const p of due) {
     if (sent >= maxPerRun) break;
+    if (Date.now() - t0 > 40000) { log("Budget temps atteint, suite au prochain passage."); break; }
     if (await isSuppressed(p.email)) { p.status = "unsubscribed"; await saveProspect(p); continue; }
     const box = p.box ? bx.find((b) => b.user === p.box) : bx[sent % Math.max(1, bx.length)];
     if (!box && !opts.dryRun) { log("Aucune boîte d'envoi configurée."); break; }
     const key = `outreach-count:${today}:${box?.user || "dry"}`;
     if (((await db.get<number>(key)) || 0) >= limit) continue;
     const step = (p.status === "ready" ? 1 : p.status === "sent1" ? 2 : 3) as 1 | 2 | 3;
-    const m = await composeEmail(p, step);
-    if (step === 1 && m.n < 2) { log(`· ${p.name} : plus assez de marchés ouverts, reporté`); continue; }
+    const m = await composeEmail(p, step, memo);
+    if (step === 1 && m.n < 2) { (p as any).retryAt = Date.now() + 2 * DAY; await saveProspect(p); log(`· ${p.name} : plus assez de marchés ouverts, reporté de 2 jours`); continue; }
     if (opts.dryRun) { log(`[dry] ${p.email} — ${m.subject}`); sent++; continue; }
     const tr = nodemailer.createTransport({ host: process.env.OUTREACH_SMTP_HOST, port: Number(process.env.OUTREACH_SMTP_PORT || 587), secure: Number(process.env.OUTREACH_SMTP_PORT) === 465, auth: { user: box!.user, pass: box!.pass } });
     try {
