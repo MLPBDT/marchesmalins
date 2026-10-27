@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 import { db } from "./db";
 import { allProspects, saveProspect, isSuppressed, Prospect } from "./prospects";
 import { matchingNotices, daysLeft } from "./alerts";
-import { tradeById, inDept } from "./trades";
+import { tradeById, inDept, deT } from "./trades";
 import { SITE_URL, LEGAL, BRAND } from "./config";
 import { sign } from "./models";
 
@@ -31,19 +31,19 @@ export async function composeEmail(p: Prospect, step: 1 | 2 | 3, memo?: Map<stri
     `Pourquoi ce message : votre adresse professionnelle est publiée sur ${host} et ce message concerne votre activité (${t.plural}). ` +
     `Pour ne plus rien recevoir, un clic : ${unsubUrl(p)} — Vos droits (accès, opposition, effacement) : ${SITE_URL}/confidentialite`;
   const pl = (k: number, one: string, many: string) => (k > 1 ? many : one);
-  const subject1 = `${n} ${pl(n, "marché public", "marchés publics")} de ${t.plural} ${inDept(p.dept)}`;
+  const subject1 = `${n} ${pl(n, "marché public", "marchés publics")} ${deT(t)} ${inDept(p.dept)}`;
   const examples = ex.map((x) => `- « ${x.objet.slice(0, 110)}${x.objet.length > 110 ? "…" : ""} » (${x.acheteur.slice(0, 60)})${x.deadline ? `, réponse avant le ${fmt(x.deadline)}` : ""}`).join("\n");
   if (step === 1) return {
     n, subject: subject1,
-    text: `Bonjour,\n\nEn ce moment, ${n} ${pl(n, "marché public", "marchés publics")} de ${t.plural} ${pl(n, "est ouvert", "sont ouverts")} ${inDept(p.dept)}${ex.length ? ", par exemple :" : "."}\n${examples}\n\nLa liste complète et à jour, avec le lien vers chaque avis officiel :\n${listUrl(p, 1)}\n\nSi vous voulez les recevoir sans chercher : l'alerte du lundi est gratuite, ou 19 €/mois pour une alerte chaque matin avec un résumé de chaque marché (montant, lots, visite obligatoire, accessible ou non à une petite entreprise).\n\nBonne journée,\n${sender}${footer}`,
+    text: `Bonjour,\n\nEn ce moment, ${n} ${pl(n, "marché public", "marchés publics")} ${deT(t)} ${pl(n, "est ouvert", "sont ouverts")} ${inDept(p.dept)}${ex.length ? ", par exemple :" : "."}\n${examples}\n\nLa liste complète et à jour, avec le lien vers chaque avis officiel :\n${listUrl(p, 1)}\n\nSi vous voulez les recevoir sans chercher : l'alerte du lundi est gratuite, ou 19 €/mois pour une alerte chaque matin avec un résumé de chaque marché (montant, lots, visite obligatoire, accessible ou non à une petite entreprise).\n\nBonne journée,\n${sender}${footer}`,
   };
   if (step === 2) return {
     n, subject: `Re: ${subject1}`,
-    text: `Bonjour,\n\n${newer > 0 ? `Depuis mon message, ${newer} nouveau${newer > 1 ? "x" : ""} marché${newer > 1 ? "s" : ""} de ${t.plural} ${newer > 1 ? "sont sortis" : "est sorti"} ${inDept(p.dept)}.` : `Les marchés de ${t.plural} ${inDept(p.dept)} sont toujours ouverts.`} La liste à jour est ici :\n${listUrl(p, 2)}\n\nL'alerte du lundi est gratuite, il suffit de laisser votre email sur la page.\n\n${sender}${footer}`,
+    text: `Bonjour,\n\n${newer > 0 ? `Depuis mon message, ${newer} nouveau${newer > 1 ? "x" : ""} marché${newer > 1 ? "s" : ""} ${deT(t)} ${newer > 1 ? "sont sortis" : "est sorti"} ${inDept(p.dept)}.` : `Les marchés ${deT(t)} ${inDept(p.dept)} sont toujours ouverts.`} La liste à jour est ici :\n${listUrl(p, 2)}\n\nL'alerte du lundi est gratuite, il suffit de laisser votre email sur la page.\n\n${sender}${footer}`,
   };
   return {
     n, subject: `Dernier message — marchés ${t.plural}`,
-    text: `Bonjour,\n\nJe ne vous écrirai plus après celui-ci. Si un jour vous voulez recevoir automatiquement les marchés publics de ${t.plural} de votre secteur, tout est ici :\n${listUrl(p, 3)}\n\nBonne continuation,\n${sender}${footer}`,
+    text: `Bonjour,\n\nJe ne vous écrirai plus après celui-ci. Si un jour vous voulez recevoir automatiquement les marchés publics ${deT(t)} de votre secteur, tout est ici :\n${listUrl(p, 3)}\n\nBonne continuation,\n${sender}${footer}`,
   };
 }
 
