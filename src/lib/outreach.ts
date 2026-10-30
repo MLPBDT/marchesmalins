@@ -51,7 +51,7 @@ export async function runOutreach(opts: { dryRun?: boolean; log?: (s: string) =>
   const log = opts.log || (() => {});
   const maxPerRun = opts.maxPerRun ?? 2;
   const bx = boxes();
-  const limit = Number(process.env.OUTREACH_DAILY_LIMIT_PER_BOX || 10);
+  const limit = Number(process.env.OUTREACH_DAILY_LIMIT_PER_BOX || 15);
   const today = new Date().toISOString().slice(0, 10);
   const hour = Number(new Date().toLocaleString("en-GB", { timeZone: "Europe/Paris", hour: "2-digit", hour12: false }));
   const dow = new Date().toLocaleString("en-GB", { timeZone: "Europe/Paris", weekday: "short" });
