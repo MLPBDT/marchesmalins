@@ -57,7 +57,9 @@ export async function hasMx(email: string) {
 
 // Picks the next (trade, dept) pair that has ≥ MIN open calls, then sources businesses of that trade there.
 const MIN_OPEN = Number(process.env.OUTREACH_MIN_OPEN || 2);
-const TARGET_DEPTS = (process.env.PROSPECT_DEPTS || "83,13,06,84,04,05,30,34,31,33,69,38,44,35,59,67,75,92,93,94,77,78,91,95").split(",").map((s) => s.trim()).filter((d) => DEPTS[d]);
+// Grandes villes d'abord (Paris et petite couronne, Lyon, Marseille, Toulouse, Bordeaux, Lille, Nantes…), puis toute la France.
+const BIG_DEPTS = "75,92,93,94,69,13,31,33,59,44,67,34,06,35,38,76,57,54,63,21,37,49,29,45,87,51,25,66,64,74,83,84,30,77,78,91,95";
+const TARGET_DEPTS = (process.env.PROSPECT_DEPTS ? process.env.PROSPECT_DEPTS.split(",") : [...BIG_DEPTS.split(","), ...Object.keys(DEPTS)]).map((s) => s.trim()).filter((d, i, a) => DEPTS[d] && a.indexOf(d) === i);
 const TARGET_TRADES = (process.env.PROSPECT_TRADES || "couvreur,plombier,electricien,cvc,macon,menuisier,peintre,platrier,carreleur,paysagiste,serrurier,nettoyage,vitrier,demolition,vrd").split(",").filter((t) => tradeById(t));
 
 export async function sourceStep(log: (s: string) => void, left: () => number, target: number) {
