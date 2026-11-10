@@ -1,5 +1,6 @@
 import { LegalPage } from "@/components/Legal";
 import { LEGAL } from "@/lib/config";
+import { CookieChoiceButton } from "@/components/Tracking";
 export const metadata = { title: "Politique de confidentialité" };
 export default function P() {
   return (
@@ -17,11 +18,13 @@ export default function P() {
         <li>Resend (emails) et Google Workspace (emails de prospection) — États-Unis, clauses contractuelles types</li>
         <li>Groq (résumés par IA du texte public des avis de marchés, aucune donnée d&apos;abonné transmise) — États-Unis</li>
         <li>Google Places (informations publiques des établissements prospectés) — États-Unis, clauses contractuelles types</li>
+        <li>Google Ads et Meta (mesure des publicités, seulement avec votre accord) — États-Unis / Irlande, clauses contractuelles types</li>
       </ul>
       <h2>4. Vos droits</h2>
       <p>Accès, rectification, effacement, opposition et limitation : écrivez à {LEGAL.email}. Réclamation possible auprès de la CNIL (cnil.fr).</p>
       <h2>5. Cookies</h2>
-      <p>Un seul cookie technique de session pour le compte. Aucun cookie publicitaire ni de mesure d&apos;audience tierce.</p>
+      <p>Un cookie technique de session pour le compte. Si vous l&apos;acceptez, des cookies de mesure publicitaire de Google (Google Ads) et de Meta servent uniquement à savoir quelles publicités nous amènent des visites et des inscriptions. Ils ne sont chargés qu&apos;après votre accord, et refuser ne change rien au service. Votre choix est conservé 13 mois au plus.</p>
+      <p><CookieChoiceButton /></p>
     </LegalPage>
   );
 }
