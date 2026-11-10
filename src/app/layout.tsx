@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { SITE_URL, BRAND } from "@/lib/config";
+import { Tracking } from "@/components/Tracking";
 
 const inter = localFont({
   src: [
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={inter.variable}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">{children}<Tracking /></body>
     </html>
   );
 }
