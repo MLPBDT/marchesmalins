@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const META = process.env.NEXT_PUBLIC_META_PIXEL_ID || "";
-const GADS = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || ""; // AW-XXXXXXXXX
+const GADS = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || ""; // AW-XXXXXXXXX, ou GTM-XXXXXXX (balise Google créée par Google Ads)
 const GADS_SIGNUP = process.env.NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_LABEL || ""; // libellé de la conversion « Inscription »
 const KEY = "consent_pub";
 // Page affichée juste après une inscription (formulaire envoyé)
@@ -33,8 +33,9 @@ function load() {
     w.dataLayer = w.dataLayer || [];
     w.gtag = function () { (w.dataLayer as any[]).push(arguments); };
     w.gtag("js", new Date());
-    w.gtag("config", GADS);
-    const s = document.createElement("script"); s.async = true; s.src = `https://www.googletagmanager.com/gtag/js?id=${GADS}`;
+    if (!GADS.startsWith("GTM-")) w.gtag("config", GADS);
+    const s = document.createElement("script"); s.async = true;
+    s.src = GADS.startsWith("GTM-") ? `https://www.googletagmanager.com/gtm.js?id=${GADS}` : `https://www.googletagmanager.com/gtag/js?id=${GADS}`;
     document.head.appendChild(s);
   }
 }
