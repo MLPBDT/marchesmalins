@@ -1,6 +1,9 @@
 import { TRADES, DEPTS } from "@/lib/trades";
 import { PLANS, PlanId } from "@/lib/config";
 
+// Ordre 01, 02… 09, 10… (un objet JS range "10" avant "01")
+const DEPT_LIST = Object.entries(DEPTS).sort(([a], [b]) => a.replace(/^2([AB])$/, "20$1").localeCompare(b.replace(/^2([AB])$/, "20$1"), "fr", { numeric: true }));
+
 export function SignupForm({ plan = "gratuit", trade, dept, email, source, compact = false }: { plan?: PlanId; trade?: string; dept?: string; email?: string; source?: string; compact?: boolean }) {
   return (
     <form action="/api/signup" method="post" className="space-y-4">
@@ -38,7 +41,7 @@ export function SignupForm({ plan = "gratuit", trade, dept, email, source, compa
           <label className="label" htmlFor="dept">Département</label>
           <select id="dept" name="depts" className="input" defaultValue={dept || ""} required>
             <option value="" disabled>Choisir…</option>
-            {Object.entries(DEPTS).map(([k, v]) => <option key={k} value={k}>{k} — {v}</option>)}
+            {DEPT_LIST.map(([k, v]) => <option key={k} value={k}>{k} — {v}</option>)}
           </select>
           {!compact && <>
             <label className="label mt-3" htmlFor="dept2">Départements voisins (facultatif, Solo et Pro)</label>
@@ -47,7 +50,7 @@ export function SignupForm({ plan = "gratuit", trade, dept, email, source, compa
                 <select key={i} name="depts" className="input" defaultValue="">
                   <option value="">—</option>
                   <option value="FR">Toute la France (Pro)</option>
-                  {Object.entries(DEPTS).map(([k, v]) => <option key={k} value={k}>{k} — {v}</option>)}
+                  {DEPT_LIST.map(([k, v]) => <option key={k} value={k}>{k} — {v}</option>)}
                 </select>
               ))}
             </div>
