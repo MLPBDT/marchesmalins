@@ -2,13 +2,13 @@ import Link from "next/link";
 import { Header, Footer } from "@/components/Chrome";
 import { PLANS, PlanId } from "@/lib/config";
 import { db } from "@/lib/db";
-import { openNotices } from "@/lib/boamp";
+import { SignupForm } from "@/components/SignupForm";
 
 export const revalidate = 3600;
 
 export default async function Home() {
-  let var83 = 0;
-  try { var83 = (await openNotices("83")).length; } catch { /* first deploy, empty DB */ }
+  // Dates de l'exemple calculées à partir d'aujourd'hui, pour qu'il ne paraisse jamais périmé
+  const inDays = (n: number) => new Date(Date.now() + n * 864e5).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
   const last = await db.get<{ fetched: number }>("ingest:last").catch(() => null);
   return (
     <>
@@ -20,19 +20,15 @@ export default async function Home() {
             <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">Les marchés publics de votre métier, <span className="text-brand-700">chaque matin dans votre boîte mail</span>.</h1>
             <p className="mt-5 text-lg text-slate-600">Écoles, mairies, offices HLM, hôpitaux : chaque jour, des centaines de chantiers et de prestations sont publiés. On les trie par métier et par département, on les résume en 3 lignes et on vous dit si c&apos;est jouable pour une petite entreprise.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/commencer" className="btn btn-primary">Créer mon alerte gratuite</Link>
+              <span className="lg:hidden"><a href="#alerte" className="btn btn-primary">Créer mon alerte gratuite</a></span>
               <Link href="/marches" className="btn btn-ghost">Voir les marchés ouverts</Link>
             </div>
-            <p className="mt-4 text-sm text-slate-500">{last?.fetched ? `${last.fetched} nouveaux avis analysés ces 2 derniers jours` : "Source officielle : BOAMP"}{var83 ? ` · ${var83} marchés ouverts dans le Var en ce moment` : ""}</p>
+            <p className="mt-4 text-sm text-slate-500">{last?.fetched ? `${last.fetched} nouveaux avis analysés ces 2 derniers jours` : "Source officielle : BOAMP"} · tous les départements de France</p>
           </div>
-          <div className="card p-5 shadow-sm">
-            <div className="text-xs text-slate-500">Commune de La Garde · Var</div>
-            <div className="mt-1 font-bold">Réfection de la toiture du groupe scolaire</div>
-            <p className="mt-2 text-sm text-slate-700">Remplacement des tuiles et de la zinguerie sur 900 m², école occupée : travaux pendant les vacances d&apos;hiver.</p>
-            <div className="mt-2 space-y-1 text-sm text-slate-700"><div>💶 Environ 85 000 € HT</div><div>📦 Lot unique</div><div>👀 Visite obligatoire le 12 octobre</div></div>
-            <div className="mt-2 text-sm"><b>✅ Accessible à une petite entreprise</b> — montant modéré, pas de chiffre d&apos;affaires minimum exigé.</div>
-            <div className="mt-2 text-sm text-red-700">📅 Date limite : 28 octobre (dans 21 j)</div>
-            <div className="mt-3 text-xs text-slate-400">Exemple d&apos;alerte</div>
+          <div id="alerte" className="card scroll-mt-20 p-5 shadow-sm sm:p-6">
+            <div className="text-lg font-extrabold">Créez votre alerte en 30 secondes</div>
+            <p className="mb-4 mt-1 text-sm text-slate-600">Gratuit, sans carte, sans compte à créer.</p>
+            <SignupForm compact source="home" />
           </div>
         </section>
 
@@ -44,6 +40,15 @@ export default async function Home() {
                 <div key={t} className="card p-5"><div className="font-bold">{t}</div><p className="mt-2 text-sm text-slate-600">{d}</p></div>
               ))}
             </div>
+            <div className="card mt-8 max-w-xl p-5 shadow-sm">
+            <div className="text-xs text-slate-500">Commune de La Garde · Var</div>
+            <div className="mt-1 font-bold">Réfection de la toiture du groupe scolaire</div>
+            <p className="mt-2 text-sm text-slate-700">Remplacement des tuiles et de la zinguerie sur 900 m², école occupée : travaux pendant les vacances d&apos;hiver.</p>
+            <div className="mt-2 space-y-1 text-sm text-slate-700"><div>💶 Environ 85 000 € HT</div><div>📦 Lot unique</div><div>👀 Visite obligatoire le {inDays(6)}</div></div>
+            <div className="mt-2 text-sm"><b>✅ Accessible à une petite entreprise</b> — montant modéré, pas de chiffre d&apos;affaires minimum exigé.</div>
+            <div className="mt-2 text-sm text-red-700">📅 Date limite : {inDays(21)} (dans 21 j)</div>
+            <div className="mt-3 text-xs text-slate-400">Exemple de marché tel qu&apos;il arrive dans l&apos;alerte (formule Solo)</div>
+          </div>
             <p className="mt-6 text-sm text-slate-500">Les marchés publics, ce n&apos;est pas que pour les grosses entreprises : les PME remportent plus de la moitié des marchés en nombre. Le plus dur, c&apos;est de les voir passer à temps.</p>
           </div>
         </section>
